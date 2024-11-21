@@ -117,16 +117,14 @@ fn add_train() -> Result<Train> {
             .unwrap()
             .as_string()
             .unwrap()
-            .parse()
-            .unwrap(),
+            .parse()?,
         train.get("name").unwrap().as_string().unwrap().to_string(),
         train
             .get("capacity")
             .unwrap()
             .as_string()
             .unwrap()
-            .parse()
-            .unwrap(),
+            .parse()?,
         train
             .get("origin")
             .unwrap()

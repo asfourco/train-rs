@@ -73,8 +73,7 @@ fn add_passenger() -> Result<Passenger> {
             .unwrap()
             .as_string()
             .unwrap()
-            .parse()
-            .unwrap(),
+            .parse()?,
         passenger
             .get("name")
             .unwrap()
@@ -86,7 +85,6 @@ fn add_passenger() -> Result<Passenger> {
             .unwrap()
             .as_string()
             .unwrap()
-            .parse()
-            .unwrap(),
+            .parse()?,
     ))
 }

@@ -3,13 +3,13 @@ use anyhow::Result;
 pub mod actions;
 pub mod helper;
 pub mod menu;
-pub mod passenger;
-pub mod train;
+pub mod passengers;
+pub mod trains;
 
 use helper::clear_screen;
 use menu::{main_menu_prompt, Menu};
-use passenger::manage_passengers;
-use train::manage_trains;
+use passengers::manage_passengers;
+use trains::manage_trains;
 
 fn main() -> Result<()> {
     let mut trains = vec![];
