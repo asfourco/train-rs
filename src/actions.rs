@@ -5,6 +5,7 @@ pub enum Action {
     List,
     Add,
     Remove,
+    Edit,
     Back,
 }
 
@@ -22,7 +23,8 @@ pub fn add_remove_prompt() -> Result<Action> {
         0 => Ok(Action::List),
         1 => Ok(Action::Add),
         2 => Ok(Action::Remove),
-        3 => Ok(Action::Back),
+        3 => Ok(Action::Edit),
+        4 => Ok(Action::Back),
         _ => unreachable!(),
     }
 }

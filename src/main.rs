@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::collections::HashMap;
 
 pub mod actions;
 pub mod helper;
@@ -12,8 +13,8 @@ use passengers::manage_passengers;
 use trains::manage_trains;
 
 fn main() -> Result<()> {
-    let mut trains = vec![];
-    let mut passengers = vec![];
+    let mut trains: trains::TrainList = HashMap::new();
+    let mut passengers: passengers::PassengerList = HashMap::new();
 
     println!("Welcome to the Train Ticketing system. Please choose an option from the menu below");
 

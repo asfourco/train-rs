@@ -4,8 +4,11 @@ format:
 lint:
 	cargo clippy
 
-build: lint format
+build:
 	cargo build --release
 
 run: build
 	./target/release/train-rs
+
+test:
+	cargo test
