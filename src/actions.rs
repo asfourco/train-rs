@@ -15,6 +15,7 @@ pub fn add_remove_prompt() -> Result<Action> {
             .message("Select an action")
             .choice("List")
             .choice("Add")
+            .choice("Edit")
             .choice("Remove")
             .choice("Back"),
     )?;
@@ -22,8 +23,8 @@ pub fn add_remove_prompt() -> Result<Action> {
     match selection.as_list_item().unwrap().index {
         0 => Ok(Action::List),
         1 => Ok(Action::Add),
-        2 => Ok(Action::Remove),
-        3 => Ok(Action::Edit),
+        2 => Ok(Action::Edit),
+        3 => Ok(Action::Remove),
         4 => Ok(Action::Back),
         _ => unreachable!(),
     }
