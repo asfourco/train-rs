@@ -139,7 +139,7 @@ fn remove_train(trains: &mut TrainList) -> Result<()> {
         .choices(train_lines)
         .build();
     let selection = requestty::prompt_one(question)?;
-    let line = selection.as_list_item().unwrap().text.parse::<u32>().unwrap();
+    let line = selection.as_list_item().unwrap().text.parse::<u32>()?;
     trains.remove(&line);
     Ok(())
 }
@@ -155,7 +155,7 @@ fn edit_train(trains: &mut TrainList) -> Result<()> {
         .build();
     let selection = requestty::prompt_one(question)?;
     let selected_train = selection.as_list_item().unwrap().text.clone();
-    let line = selected_train.split(',').next().unwrap().trim().parse::<u32>().unwrap();
+    let line = selected_train.split(',').next().unwrap().trim().parse::<u32>()?;
 
     let questions: Vec<Question> = vec![
         Question::input("name")
@@ -188,7 +188,7 @@ fn edit_train(trains: &mut TrainList) -> Result<()> {
 
     if let Some(train) = trains.get_mut(&line) {
         train.name = answers.get("name").unwrap().as_string().unwrap().to_string();
-        train.capacity = answers.get("capacity").unwrap().as_string().unwrap().parse().unwrap();
+        train.capacity = answers.get("capacity").unwrap().as_string().unwrap().parse()?;
         train.origin = answers.get("origin").unwrap().as_string().unwrap().to_string();
         train.destination = answers.get("destination").unwrap().as_string().unwrap().to_string();
         train.departure = NaiveTime::parse_from_str(answers.get("departure").unwrap().as_string().unwrap(), "%H:%M")
