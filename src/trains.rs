@@ -8,9 +8,9 @@ use std::collections::{HashMap, HashSet};
 pub struct Train {
     pub line: u32,
     pub name: String,
-    capacity: u32,
-    origin: String,
-    destination: String,
+    pub capacity: u32,
+    pub origin: String,
+    pub destination: String,
     pub departure: NaiveTime,
     pub arrival: NaiveTime,
     pub passengers: HashSet<String>, // Set of passenger IDs

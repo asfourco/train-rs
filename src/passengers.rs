@@ -8,7 +8,7 @@ use crate::helper::{clear_screen, continue_prompt};
 pub struct Passenger {
     pub id: String,
     pub name: String,
-    age: u16,
+    pub age: u16,
     pub bookings: HashSet<String>,
 }
 

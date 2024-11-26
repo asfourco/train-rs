@@ -115,7 +115,50 @@ pub fn manage_bookings(
                     println!("No bookings to edit");
                     continue_prompt();
                 } else {
-                    edit_booking(bookings, passengers, trains)?;
+                    let booking_choices: Vec<String> = bookings
+                        .values()
+                        .map(|booking| format!("{}, {}", booking.id, booking.train_line))
+                        .collect();
+                    let question = Question::select("booking_list")
+                        .message("Select booking to edit")
+                        .choices(booking_choices)
+                        .build();
+                    let selection = requestty::prompt_one(question)?;
+                    let selected_booking = selection.as_list_item().unwrap().text.clone();
+                    let booking_id = selected_booking
+                        .split(',')
+                        .next()
+                        .unwrap()
+                        .trim()
+                        .to_string();
+
+                    let questions: Vec<Question> = vec![Question::select("train")
+                        .message("Select new train")
+                        .choices(
+                            trains
+                                .values()
+                                .map(|train| {
+                                    requestty::Choice(format!("{}, {}", train.line, train.name))
+                                })
+                                .collect::<Vec<_>>(),
+                        )
+                        .build()];
+
+                    let answers = requestty::prompt(questions)?;
+
+                    let train_line = answers
+                        .get("train")
+                        .unwrap()
+                        .as_list_item()
+                        .unwrap()
+                        .text
+                        .split(',')
+                        .next()
+                        .unwrap()
+                        .trim()
+                        .parse::<u32>()
+                        .unwrap();
+                    edit_booking(bookings, passengers, trains, booking_id, train_line)?;
                 }
             }
             Action::Back => {
@@ -246,60 +289,20 @@ pub fn edit_booking(
     bookings: &mut BookingList,
     passengers: &mut PassengerList,
     trains: &mut TrainList,
+    booking_id: String,
+    train_line: u32,
 ) -> Result<()> {
-    let booking_choices: Vec<String> = bookings
-        .values()
-        .map(|booking| format!("{}, {}", booking.id, booking.train_line))
-        .collect();
-    let question = Question::select("booking_list")
-        .message("Select booking to edit")
-        .choices(booking_choices)
-        .build();
-    let selection = requestty::prompt_one(question)?;
-    let selected_booking = selection.as_list_item().unwrap().text.clone();
-    let booking_id = selected_booking
-        .split(',')
-        .next()
-        .unwrap()
-        .trim()
-        .to_string();
-
-    let questions: Vec<Question> = vec![Question::select("train")
-        .message("Select new train")
-        .choices(
-            trains
-                .values()
-                .map(|train| requestty::Choice(format!("{}, {}", train.line, train.name)))
-                .collect::<Vec<_>>(),
-        )
-        .build()];
-
-    let answers = requestty::prompt(questions)?;
-
-    let new_train_line = answers
-        .get("train")
-        .unwrap()
-        .as_list_item()
-        .unwrap()
-        .text
-        .split(',')
-        .next()
-        .unwrap()
-        .trim()
-        .parse::<u32>()
-        .unwrap();
-
     let booking = bookings.get(&booking_id).unwrap();
     let passenger = passengers.get(&booking.passenger_id).unwrap();
-    let new_train = trains.get(&new_train_line).unwrap();
+    let train = trains.get(&train_line).unwrap();
 
     // Check for overlapping travel times
     for existing_booking_id in &passenger.bookings {
         let existing_booking = bookings.get(existing_booking_id).unwrap();
         let existing_train = trains.get(&existing_booking.train_line).unwrap();
-        if new_train_line == existing_booking.train_line
-            || (new_train.departure < existing_train.arrival
-                && new_train.arrival > existing_train.departure)
+        if train_line == existing_booking.train_line
+            || (train.departure < existing_train.arrival
+                && train.arrival > existing_train.departure)
         {
             return Err(anyhow::anyhow!(
                 "Passenger already has a booking for this train or overlapping travel times"
@@ -308,7 +311,7 @@ pub fn edit_booking(
     }
 
     // Update booking
-    bookings.get_mut(&booking_id).unwrap().train_line = new_train_line;
+    bookings.get_mut(&booking_id).unwrap().train_line = train_line;
 
     Ok(())
 }
@@ -370,4 +373,171 @@ pub fn list_bookings_for_passenger(passengers: &PassengerList, passenger_id: &st
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::passengers::Passenger;
+    use crate::trains::Train;
+    use chrono::NaiveTime;
+    use std::collections::HashSet;
+
+    fn setup() -> (BookingList, PassengerList, TrainList) {
+        let bookings = BookingList::new();
+        let mut passengers = PassengerList::new();
+        let mut trains = TrainList::new();
+
+        passengers.insert(
+            "P1".to_string(),
+            Passenger {
+                id: "P1".to_string(),
+                name: "John Doe".to_string(),
+                age: 30,
+                bookings: HashSet::new(),
+            },
+        );
+
+        trains.insert(
+            1,
+            Train {
+                line: 1,
+                name: "Express".to_string(),
+                capacity: 100,
+                origin: "Toronto".to_string(),
+                destination: "Hamilton".to_string(),
+                departure: NaiveTime::parse_from_str("11:00", "%H:%M").unwrap(),
+                arrival: NaiveTime::parse_from_str("12:00", "%H:%M").unwrap(),
+                passengers: HashSet::new(),
+            },
+        );
+
+        (bookings, passengers, trains)
+    }
+
+    #[test]
+    fn test_add_booking() {
+        let (mut bookings, mut passengers, mut trains) = setup();
+        let result = add_booking(
+            &mut bookings,
+            &mut passengers,
+            &mut trains,
+            "P1".to_string(),
+            1,
+        );
+        assert!(result.is_ok());
+        assert_eq!(bookings.len(), 1);
+        assert_eq!(passengers.get("P1").unwrap().bookings.len(), 1);
+        assert_eq!(trains.get(&1).unwrap().passengers.len(), 1);
+    }
+
+    #[test]
+    fn test_remove_booking() {
+        let (mut bookings, mut passengers, mut trains) = setup();
+        add_booking(
+            &mut bookings,
+            &mut passengers,
+            &mut trains,
+            "P1".to_string(),
+            1,
+        )
+        .unwrap();
+        let result = remove_booking(
+            &mut bookings,
+            &mut passengers,
+            &mut trains,
+            "P1_1".to_string(),
+        );
+        assert!(result.is_ok());
+        assert!(bookings.is_empty());
+        assert!(passengers.get("P1").unwrap().bookings.is_empty());
+        assert!(trains.get(&1).unwrap().passengers.is_empty());
+    }
+
+    #[test]
+    fn test_list_all_bookings() {
+        let (mut bookings, mut passengers, mut trains) = setup();
+        add_booking(
+            &mut bookings,
+            &mut passengers,
+            &mut trains,
+            "P1".to_string(),
+            1,
+        )
+        .unwrap();
+        let result = list_all_bookings(&bookings);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_list_bookings_for_passenger() {
+        let (mut bookings, mut passengers, mut trains) = setup();
+        add_booking(
+            &mut bookings,
+            &mut passengers,
+            &mut trains,
+            "P1".to_string(),
+            1,
+        )
+        .unwrap();
+        let result = list_bookings_for_passenger(&passengers, "P1");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_list_passengers_on_train() {
+        let (mut bookings, mut passengers, mut trains) = setup();
+        add_booking(
+            &mut bookings,
+            &mut passengers,
+            &mut trains,
+            "P1".to_string(),
+            1,
+        )
+        .unwrap();
+        let result = list_passengers_on_train(&trains, 1);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_edit_booking() {
+        let (mut bookings, mut passengers, mut trains) = setup();
+
+        // Setup initial booking
+        add_booking(
+            &mut bookings,
+            &mut passengers,
+            &mut trains,
+            "P1".to_string(),
+            1,
+        )
+        .unwrap();
+
+        // Add second train
+        trains.insert(
+            2,
+            Train {
+                line: 2,
+                name: "Local".to_string(),
+                capacity: 100,
+                origin: "Toronto".to_string(),
+                destination: "Hamilton".to_string(),
+                departure: NaiveTime::parse_from_str("13:00", "%H:%M").unwrap(),
+                arrival: NaiveTime::parse_from_str("15:00", "%H:%M").unwrap(),
+                passengers: HashSet::new(),
+            },
+        );
+
+        // Test core edit booking function
+        let result = edit_booking(
+            &mut bookings,
+            &mut passengers,
+            &mut trains,
+            "P1_1".to_string(),
+            2,
+        );
+
+        assert!(result.is_ok());
+        assert_eq!(bookings.get("P1_1").unwrap().train_line, 2);
+    }
 }
