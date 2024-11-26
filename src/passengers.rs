@@ -60,7 +60,7 @@ pub fn manage_passengers(passengers: &mut PassengerList) -> Result<()> {
                 if !passengers.contains_key(&new_passenger.id) {
                     passengers.insert(new_passenger.id.clone(), new_passenger);
                 } else {
-                    println!("Passenger already exissts");
+                    println!("Passenger already exists");
                     continue_prompt();
                 }
             }
@@ -150,7 +150,7 @@ fn edit_passenger(passengers: &mut PassengerList) -> Result<()> {
 
     if let Some(passenger) = passengers.get_mut(&id) {
         passenger.name = answers.get("name").unwrap().as_string().unwrap().to_string();
-        passenger.age = answers.get("age").unwrap().as_string().unwrap().parse().unwrap();
+        passenger.age = answers.get("age").unwrap().as_string().unwrap().parse()?;
     }
 
     Ok(())

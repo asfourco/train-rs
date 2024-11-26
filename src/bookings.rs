@@ -3,9 +3,9 @@ use requestty::{self, Question};
 use std::collections::HashMap;
 
 use crate::actions::{add_remove_prompt, Action};
-use crate::helper::{clear_screen, continue_prompt};
-use crate::passengers::PassengerList;
-use crate::trains::TrainList;
+use crate::helper::{clear_screen, continue_prompt, parse_number_answer, parse_string_answer};
+use crate::passengers::{Passenger, PassengerList};
+use crate::trains::{Train, TrainList};
 
 pub struct Booking {
     id: String,
@@ -71,29 +71,8 @@ pub fn manage_bookings(
 
                 let answers = requestty::prompt(questions)?;
 
-                let passenger_id = answers
-                    .get("passenger")
-                    .unwrap()
-                    .as_list_item()
-                    .unwrap()
-                    .text
-                    .split(',')
-                    .next()
-                    .unwrap()
-                    .trim()
-                    .to_string();
-                let train_line = answers
-                    .get("train")
-                    .unwrap()
-                    .as_list_item()
-                    .unwrap()
-                    .text
-                    .split(',')
-                    .next()
-                    .unwrap()
-                    .trim()
-                    .parse::<u32>()
-                    .unwrap();
+                let passenger_id = parse_string_answer(&answers, "passenger", ",");
+                let train_line = parse_number_answer(answers, "train", ",")?;
                 add_booking(bookings, passengers, trains, passenger_id, train_line)?;
             }
             Action::Remove => {
@@ -143,18 +122,7 @@ pub fn manage_bookings(
 
                     let answers = requestty::prompt(questions)?;
 
-                    let train_line = answers
-                        .get("train")
-                        .unwrap()
-                        .as_list_item()
-                        .unwrap()
-                        .text
-                        .split(',')
-                        .next()
-                        .unwrap()
-                        .trim()
-                        .parse::<u32>()
-                        .unwrap();
+                    let train_line = parse_number_answer(answers, "train", ",")?;
                     edit_booking(bookings, passengers, trains, booking_id, train_line)?;
                 }
             }
@@ -230,6 +198,27 @@ pub fn list_all_bookings(bookings: &BookingList) -> Result<()> {
     Ok(())
 }
 
+fn check_for_overlap(
+    passenger: &Passenger,
+    train: &Train,
+    train_line: u32,
+    trains: &TrainList,
+    bookings: &BookingList,
+) -> Result<()> {
+    for booking_id in &passenger.bookings {
+        let booking = bookings.get(booking_id).unwrap();
+        let booked_train = trains.get(&booking.train_line).unwrap();
+        if booking.train_line == train_line
+            || (train.departure < booked_train.arrival && train.arrival > booked_train.departure)
+        {
+            return Err(anyhow::anyhow!(
+                "Passenger already has a booking for this train or overlapping travel times"
+            ));
+        }
+    }
+    Ok(())
+}
+
 pub fn add_booking(
     bookings: &mut BookingList,
     passengers: &mut PassengerList,
@@ -245,17 +234,7 @@ pub fn add_booking(
         .get(&train_line)
         .ok_or_else(|| anyhow::anyhow!("Train not found"))?;
 
-    for booking_id in &passenger.bookings {
-        let booking = bookings.get(booking_id).unwrap();
-        let booked_train = trains.get(&booking.train_line).unwrap();
-        if booking.train_line == train_line
-            || (train.departure < booked_train.arrival && train.arrival > booked_train.departure)
-        {
-            return Err(anyhow::anyhow!(
-                "Passenger already has a booking for this train or overlapping travel times"
-            ));
-        }
-    }
+    check_for_overlap(passenger, train, train_line, trains, bookings)?;
 
     let booking_id = format!("{}_{}", passenger_id, train_line);
     let booking = Booking::new(booking_id.clone(), passenger_id.clone(), train_line);
@@ -286,17 +265,7 @@ pub fn edit_booking(
     let train = trains.get(&train_line).unwrap();
 
     // Check for overlapping travel times
-    for existing_booking_id in &passenger.bookings {
-        let existing_booking = bookings.get(existing_booking_id).unwrap();
-        let existing_train = trains.get(&existing_booking.train_line).unwrap();
-        if train_line == existing_booking.train_line
-            || (train.departure < existing_train.arrival && train.arrival > existing_train.departure)
-        {
-            return Err(anyhow::anyhow!(
-                "Passenger already has a booking for this train or overlapping travel times"
-            ));
-        }
-    }
+    check_for_overlap(passenger, train, train_line, trains, bookings)?;
 
     // Update booking
     bookings.get_mut(&booking_id).unwrap().train_line = train_line;
