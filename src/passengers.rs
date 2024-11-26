@@ -13,7 +13,11 @@ pub struct Passenger {
 }
 
 impl Passenger {
-    pub fn new(id: String, name: String, age: u16) -> Self {
+    pub fn new(
+        id: String,
+        name: String,
+        age: u16,
+    ) -> Self {
         Self {
             id,
             name,
@@ -21,10 +25,16 @@ impl Passenger {
             bookings: HashSet::new(),
         }
     }
-    pub fn add_booking(&mut self, booking_id: String) {
+    pub fn add_booking(
+        &mut self,
+        booking_id: String,
+    ) {
         self.bookings.insert(booking_id);
     }
-    pub fn remove_booking(&mut self, booking_id: &str) {
+    pub fn remove_booking(
+        &mut self,
+        booking_id: &str,
+    ) {
         self.bookings.remove(booking_id);
     }
 }
@@ -40,10 +50,7 @@ pub fn manage_passengers(passengers: &mut PassengerList) -> Result<()> {
                     println!("No passengers found");
                 } else {
                     for (id, passenger) in &mut *passengers {
-                        println!(
-                            "ID: {}, Name: {}, Age: {}",
-                            id, passenger.name, passenger.age
-                        );
+                        println!("ID: {}, Name: {}, Age: {}", id, passenger.name, passenger.age);
                     }
                 }
                 continue_prompt();
@@ -82,32 +89,18 @@ pub fn manage_passengers(passengers: &mut PassengerList) -> Result<()> {
 
 fn add_passenger() -> Result<Passenger> {
     let questions: Vec<Question> = vec![
-        Question::input("id")
-            .message("Enter the ID of the passenger")
-            .build(),
+        Question::input("id").message("Enter the ID of the passenger").build(),
         Question::input("name")
             .message("Enter the name of the passenger")
             .build(),
-        Question::input("age")
-            .message("Enter the age of the passenger")
-            .build(),
+        Question::input("age").message("Enter the age of the passenger").build(),
     ];
 
     let passenger = requestty::prompt(questions)?;
 
     Ok(Passenger::new(
-        passenger
-            .get("id")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .to_string(),
-        passenger
-            .get("name")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .to_string(),
+        passenger.get("id").unwrap().as_string().unwrap().to_string(),
+        passenger.get("name").unwrap().as_string().unwrap().to_string(),
         passenger.get("age").unwrap().as_string().unwrap().parse()?,
     ))
 }
@@ -123,12 +116,7 @@ fn remove_passenger(passengers: &mut PassengerList) -> Result<()> {
         .build();
     let selection = requestty::prompt_one(question)?;
     let selected_passenger = selection.as_list_item().unwrap().text.clone();
-    let id = selected_passenger
-        .split(',')
-        .next()
-        .unwrap()
-        .trim()
-        .to_string();
+    let id = selected_passenger.split(',').next().unwrap().trim().to_string();
     passengers.remove(&id);
 
     Ok(())
@@ -145,12 +133,7 @@ fn edit_passenger(passengers: &mut PassengerList) -> Result<()> {
         .build();
     let selection = requestty::prompt_one(question)?;
     let selected_passenger = selection.as_list_item().unwrap().text.clone();
-    let id = selected_passenger
-        .split(',')
-        .next()
-        .unwrap()
-        .trim()
-        .to_string();
+    let id = selected_passenger.split(',').next().unwrap().trim().to_string();
 
     let questions: Vec<Question> = vec![
         Question::input("name")
@@ -166,19 +149,8 @@ fn edit_passenger(passengers: &mut PassengerList) -> Result<()> {
     let answers = requestty::prompt(questions)?;
 
     if let Some(passenger) = passengers.get_mut(&id) {
-        passenger.name = answers
-            .get("name")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .to_string();
-        passenger.age = answers
-            .get("age")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .parse()
-            .unwrap();
+        passenger.name = answers.get("name").unwrap().as_string().unwrap().to_string();
+        passenger.age = answers.get("age").unwrap().as_string().unwrap().parse().unwrap();
     }
 
     Ok(())
