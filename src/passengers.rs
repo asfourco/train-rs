@@ -1,19 +1,31 @@
 use anyhow::Result;
 use requestty::{self, Question};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::actions::{add_remove_prompt, Action};
 use crate::helper::{clear_screen, continue_prompt};
 
 pub struct Passenger {
-    id: String,
-    name: String,
+    pub id: String,
+    pub name: String,
     age: u16,
+    pub bookings: HashSet<String>,
 }
 
 impl Passenger {
-    fn new(id: String, name: String, age: u16) -> Self {
-        Self { id, name, age }
+    pub fn new(id: String, name: String, age: u16) -> Self {
+        Self {
+            id,
+            name,
+            age,
+            bookings: HashSet::new(),
+        }
+    }
+    pub fn add_booking(&mut self, booking_id: String) {
+        self.bookings.insert(booking_id);
+    }
+    pub fn remove_booking(&mut self, booking_id: &str) {
+        self.bookings.remove(booking_id);
     }
 }
 
@@ -177,7 +189,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_add_passenger() {
+    fn test_create_passenger() {
         let passenger = Passenger::new("1".to_string(), "John Doe".to_string(), 30);
 
         assert_eq!(passenger.id, "1");

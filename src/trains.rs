@@ -3,20 +3,21 @@ use crate::helper::{clear_screen, continue_prompt};
 use anyhow::{Context, Result};
 use chrono::NaiveTime;
 use requestty::{self, Question};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub struct Train {
-    line: u32,
-    name: String,
+    pub line: u32,
+    pub name: String,
     capacity: u32,
     origin: String,
     destination: String,
-    departure: NaiveTime,
-    arrival: NaiveTime,
+    pub departure: NaiveTime,
+    pub arrival: NaiveTime,
+    pub passengers: HashSet<String>, // Set of passenger IDs
 }
 
 impl Train {
-    fn new(
+    pub fn new(
         line: u32,
         name: String,
         capacity: u32,
@@ -33,6 +34,7 @@ impl Train {
             destination,
             departure,
             arrival,
+            passengers: HashSet::new(),
         }
     }
 }
