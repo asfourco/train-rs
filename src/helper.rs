@@ -6,10 +6,5 @@ pub fn clear_screen() {
 }
 
 pub fn continue_prompt() {
-    prompt_one(
-        Question::input("continue")
-            .message("Press Enter to continue")
-            .build(),
-    )
-    .unwrap();
+    prompt_one(Question::input("continue").message("Press Enter to continue").build()).unwrap();
 }

@@ -95,9 +95,7 @@ fn add_train() -> Result<Train> {
         Question::input("line")
             .message("Enter the line number of the train")
             .build(),
-        Question::input("name")
-            .message("Enter the name of the train")
-            .build(),
+        Question::input("name").message("Enter the name of the train").build(),
         Question::input("origin")
             .message("Enter the origin of the train")
             .build(),
@@ -117,37 +115,18 @@ fn add_train() -> Result<Train> {
 
     let train = requestty::prompt(questions)?;
 
-    let departure_time = NaiveTime::parse_from_str(
-        train.get("departure").unwrap().as_string().unwrap(),
-        "%H:%M",
-    )
-    .context("Invalid departure time")?;
+    let departure_time = NaiveTime::parse_from_str(train.get("departure").unwrap().as_string().unwrap(), "%H:%M")
+        .context("Invalid departure time")?;
 
-    let arrival_time =
-        NaiveTime::parse_from_str(train.get("arrival").unwrap().as_string().unwrap(), "%H:%M")
-            .context("Invalid arrival time")?;
+    let arrival_time = NaiveTime::parse_from_str(train.get("arrival").unwrap().as_string().unwrap(), "%H:%M")
+        .context("Invalid arrival time")?;
 
     Ok(Train::new(
         train.get("line").unwrap().as_string().unwrap().parse()?,
         train.get("name").unwrap().as_string().unwrap().to_string(),
-        train
-            .get("capacity")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .parse()?,
-        train
-            .get("origin")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .to_string(),
-        train
-            .get("destination")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .to_string(),
+        train.get("capacity").unwrap().as_string().unwrap().parse()?,
+        train.get("origin").unwrap().as_string().unwrap().to_string(),
+        train.get("destination").unwrap().as_string().unwrap().to_string(),
         departure_time,
         arrival_time,
     ))
@@ -160,12 +139,7 @@ fn remove_train(trains: &mut TrainList) -> Result<()> {
         .choices(train_lines)
         .build();
     let selection = requestty::prompt_one(question)?;
-    let line = selection
-        .as_list_item()
-        .unwrap()
-        .text
-        .parse::<u32>()
-        .unwrap();
+    let line = selection.as_list_item().unwrap().text.parse::<u32>().unwrap();
     trains.remove(&line);
     Ok(())
 }
@@ -181,13 +155,7 @@ fn edit_train(trains: &mut TrainList) -> Result<()> {
         .build();
     let selection = requestty::prompt_one(question)?;
     let selected_train = selection.as_list_item().unwrap().text.clone();
-    let line = selected_train
-        .split(',')
-        .next()
-        .unwrap()
-        .trim()
-        .parse::<u32>()
-        .unwrap();
+    let line = selected_train.split(',').next().unwrap().trim().parse::<u32>().unwrap();
 
     let questions: Vec<Question> = vec![
         Question::input("name")
@@ -219,41 +187,14 @@ fn edit_train(trains: &mut TrainList) -> Result<()> {
     let answers = requestty::prompt(questions)?;
 
     if let Some(train) = trains.get_mut(&line) {
-        train.name = answers
-            .get("name")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .to_string();
-        train.capacity = answers
-            .get("capacity")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .parse()
-            .unwrap();
-        train.origin = answers
-            .get("origin")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .to_string();
-        train.destination = answers
-            .get("destination")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .to_string();
-        train.departure = NaiveTime::parse_from_str(
-            answers.get("departure").unwrap().as_string().unwrap(),
-            "%H:%M",
-        )
-        .context("Invalid departure time")?;
-        train.arrival = NaiveTime::parse_from_str(
-            answers.get("arrival").unwrap().as_string().unwrap(),
-            "%H:%M",
-        )
-        .context("Invalid arrival time")?;
+        train.name = answers.get("name").unwrap().as_string().unwrap().to_string();
+        train.capacity = answers.get("capacity").unwrap().as_string().unwrap().parse().unwrap();
+        train.origin = answers.get("origin").unwrap().as_string().unwrap().to_string();
+        train.destination = answers.get("destination").unwrap().as_string().unwrap().to_string();
+        train.departure = NaiveTime::parse_from_str(answers.get("departure").unwrap().as_string().unwrap(), "%H:%M")
+            .context("Invalid departure time")?;
+        train.arrival = NaiveTime::parse_from_str(answers.get("arrival").unwrap().as_string().unwrap(), "%H:%M")
+            .context("Invalid arrival time")?;
     }
 
     Ok(())
@@ -352,13 +293,7 @@ mod tests {
         assert_eq!(edited_train.capacity, 200);
         assert_eq!(edited_train.origin, "City X");
         assert_eq!(edited_train.destination, "City Y");
-        assert_eq!(
-            edited_train.departure,
-            NaiveTime::from_hms_opt(10, 0, 0).unwrap()
-        );
-        assert_eq!(
-            edited_train.arrival,
-            NaiveTime::from_hms_opt(13, 0, 0).unwrap()
-        );
+        assert_eq!(edited_train.departure, NaiveTime::from_hms_opt(10, 0, 0).unwrap());
+        assert_eq!(edited_train.arrival, NaiveTime::from_hms_opt(13, 0, 0).unwrap());
     }
 }

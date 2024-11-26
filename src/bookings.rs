@@ -14,7 +14,11 @@ pub struct Booking {
 }
 
 impl Booking {
-    fn new(id: String, passenger_id: String, train_line: u32) -> Self {
+    fn new(
+        id: String,
+        passenger_id: String,
+        train_line: u32,
+    ) -> Self {
         Self {
             id,
             passenger_id,
@@ -125,21 +129,14 @@ pub fn manage_bookings(
                         .build();
                     let selection = requestty::prompt_one(question)?;
                     let selected_booking = selection.as_list_item().unwrap().text.clone();
-                    let booking_id = selected_booking
-                        .split(',')
-                        .next()
-                        .unwrap()
-                        .trim()
-                        .to_string();
+                    let booking_id = selected_booking.split(',').next().unwrap().trim().to_string();
 
                     let questions: Vec<Question> = vec![Question::select("train")
                         .message("Select new train")
                         .choices(
                             trains
                                 .values()
-                                .map(|train| {
-                                    requestty::Choice(format!("{}, {}", train.line, train.name))
-                                })
+                                .map(|train| requestty::Choice(format!("{}, {}", train.line, train.name)))
                                 .collect::<Vec<_>>(),
                         )
                         .build()];
@@ -180,13 +177,7 @@ fn list_bookings() -> Result<BookingListType> {
 
     let answers = requestty::prompt(questions)?;
 
-    match answers
-        .get("list_type")
-        .unwrap()
-        .as_list_item()
-        .unwrap()
-        .index
-    {
+    match answers.get("list_type").unwrap().as_list_item().unwrap().index {
         0 => Ok(BookingListType::All),
         1 => Ok(BookingListType::Passenger),
         2 => Ok(BookingListType::Train),
@@ -205,20 +196,18 @@ fn manage_list_bookings(
             list_all_bookings(bookings)?;
         }
         BookingListType::Passenger => {
-            let passenger_id_prompt = requestty::prompt_one(
-                Question::input("passenger_id").message("Enter passenger ID"),
-            )?;
+            let passenger_id_prompt =
+                requestty::prompt_one(Question::input("passenger_id").message("Enter passenger ID"))?;
             let passenger_id = passenger_id_prompt.as_string().unwrap();
 
             list_bookings_for_passenger(passengers, passenger_id)?;
         }
         BookingListType::Train => {
-            let train_line =
-                requestty::prompt_one(Question::input("train_line").message("Enter train line"))?
-                    .as_string()
-                    .unwrap()
-                    .parse::<u32>()
-                    .context("Invalid train line")?;
+            let train_line = requestty::prompt_one(Question::input("train_line").message("Enter train line"))?
+                .as_string()
+                .unwrap()
+                .parse::<u32>()
+                .context("Invalid train line")?;
 
             list_passengers_on_train(trains, train_line)?;
         }
@@ -301,8 +290,7 @@ pub fn edit_booking(
         let existing_booking = bookings.get(existing_booking_id).unwrap();
         let existing_train = trains.get(&existing_booking.train_line).unwrap();
         if train_line == existing_booking.train_line
-            || (train.departure < existing_train.arrival
-                && train.arrival > existing_train.departure)
+            || (train.departure < existing_train.arrival && train.arrival > existing_train.departure)
         {
             return Err(anyhow::anyhow!(
                 "Passenger already has a booking for this train or overlapping travel times"
@@ -322,12 +310,7 @@ pub fn remove_booking(
     trains: &mut TrainList,
     selected_booking: String,
 ) -> Result<()> {
-    let booking_id = selected_booking
-        .split(',')
-        .next()
-        .unwrap()
-        .trim()
-        .to_string();
+    let booking_id = selected_booking.split(',').next().unwrap().trim().to_string();
 
     let booking = bookings.remove(&booking_id).unwrap();
     passengers
@@ -343,7 +326,10 @@ pub fn remove_booking(
     Ok(())
 }
 
-pub fn list_passengers_on_train(trains: &TrainList, train_line: u32) -> Result<()> {
+pub fn list_passengers_on_train(
+    trains: &TrainList,
+    train_line: u32,
+) -> Result<()> {
     if let Some(train) = trains.get(&train_line) {
         if train.passengers.is_empty() {
             println!("No passengers found on this train");
@@ -359,7 +345,10 @@ pub fn list_passengers_on_train(trains: &TrainList, train_line: u32) -> Result<(
     Ok(())
 }
 
-pub fn list_bookings_for_passenger(passengers: &PassengerList, passenger_id: &str) -> Result<()> {
+pub fn list_bookings_for_passenger(
+    passengers: &PassengerList,
+    passenger_id: &str,
+) -> Result<()> {
     if let Some(passenger) = passengers.get(passenger_id) {
         if passenger.bookings.is_empty() {
             println!("No bookings found for this passenger");
@@ -418,13 +407,7 @@ mod tests {
     #[test]
     fn test_add_booking() {
         let (mut bookings, mut passengers, mut trains) = setup();
-        let result = add_booking(
-            &mut bookings,
-            &mut passengers,
-            &mut trains,
-            "P1".to_string(),
-            1,
-        );
+        let result = add_booking(&mut bookings, &mut passengers, &mut trains, "P1".to_string(), 1);
         assert!(result.is_ok());
         assert_eq!(bookings.len(), 1);
         assert_eq!(passengers.get("P1").unwrap().bookings.len(), 1);
@@ -434,20 +417,8 @@ mod tests {
     #[test]
     fn test_remove_booking() {
         let (mut bookings, mut passengers, mut trains) = setup();
-        add_booking(
-            &mut bookings,
-            &mut passengers,
-            &mut trains,
-            "P1".to_string(),
-            1,
-        )
-        .unwrap();
-        let result = remove_booking(
-            &mut bookings,
-            &mut passengers,
-            &mut trains,
-            "P1_1".to_string(),
-        );
+        add_booking(&mut bookings, &mut passengers, &mut trains, "P1".to_string(), 1).unwrap();
+        let result = remove_booking(&mut bookings, &mut passengers, &mut trains, "P1_1".to_string());
         assert!(result.is_ok());
         assert!(bookings.is_empty());
         assert!(passengers.get("P1").unwrap().bookings.is_empty());
@@ -457,14 +428,7 @@ mod tests {
     #[test]
     fn test_list_all_bookings() {
         let (mut bookings, mut passengers, mut trains) = setup();
-        add_booking(
-            &mut bookings,
-            &mut passengers,
-            &mut trains,
-            "P1".to_string(),
-            1,
-        )
-        .unwrap();
+        add_booking(&mut bookings, &mut passengers, &mut trains, "P1".to_string(), 1).unwrap();
         let result = list_all_bookings(&bookings);
         assert!(result.is_ok());
     }
@@ -472,14 +436,7 @@ mod tests {
     #[test]
     fn test_list_bookings_for_passenger() {
         let (mut bookings, mut passengers, mut trains) = setup();
-        add_booking(
-            &mut bookings,
-            &mut passengers,
-            &mut trains,
-            "P1".to_string(),
-            1,
-        )
-        .unwrap();
+        add_booking(&mut bookings, &mut passengers, &mut trains, "P1".to_string(), 1).unwrap();
         let result = list_bookings_for_passenger(&passengers, "P1");
         assert!(result.is_ok());
     }
@@ -487,14 +444,7 @@ mod tests {
     #[test]
     fn test_list_passengers_on_train() {
         let (mut bookings, mut passengers, mut trains) = setup();
-        add_booking(
-            &mut bookings,
-            &mut passengers,
-            &mut trains,
-            "P1".to_string(),
-            1,
-        )
-        .unwrap();
+        add_booking(&mut bookings, &mut passengers, &mut trains, "P1".to_string(), 1).unwrap();
         let result = list_passengers_on_train(&trains, 1);
         assert!(result.is_ok());
     }
@@ -504,14 +454,7 @@ mod tests {
         let (mut bookings, mut passengers, mut trains) = setup();
 
         // Setup initial booking
-        add_booking(
-            &mut bookings,
-            &mut passengers,
-            &mut trains,
-            "P1".to_string(),
-            1,
-        )
-        .unwrap();
+        add_booking(&mut bookings, &mut passengers, &mut trains, "P1".to_string(), 1).unwrap();
 
         // Add second train
         trains.insert(
@@ -529,13 +472,7 @@ mod tests {
         );
 
         // Test core edit booking function
-        let result = edit_booking(
-            &mut bookings,
-            &mut passengers,
-            &mut trains,
-            "P1_1".to_string(),
-            2,
-        );
+        let result = edit_booking(&mut bookings, &mut passengers, &mut trains, "P1_1".to_string(), 2);
 
         assert!(result.is_ok());
         assert_eq!(bookings.get("P1_1").unwrap().train_line, 2);
